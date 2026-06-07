@@ -5,3 +5,4 @@ from .crime import CrimeType, Crime, CrimeStatusHistory
 from .entities import Suspect, SuspectCrime, Victim, VictimCrime, Vehicle, CrimeVehicle, Evidence
 from .investigation import Investigation, InvestigationNote
 from .analytics import Report, AIConversation, AIMessage, AIQueryLog, CrimePrediction, HotspotAnalysis, AuditLog, Notification
+from .document import DocumentChunk

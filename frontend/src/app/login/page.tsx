@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/authStore";
+import { authService } from "../../services/auth.service";
 import { Shield, Lock, User, Key, KeyRound, AlertTriangle } from "lucide-react";
 
 export default function LoginPage() {
@@ -58,25 +59,31 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
-      // Simulate JWT token issuance and role binding
-      setTimeout(() => {
-        setIsLoading(false);
-        
-        // Mock token and details
-        const mockUser = {
-          id: "USR-" + badge,
-          badge_number: badge,
-          role: role,
-          first_name: badge.startsWith("SP") ? "SP Kumar" : "Officer",
-          last_name: "K."
-        };
-        
-        setAuth(mockUser, "mock-jwt-token-kcia-2026-auth");
-        router.push("/dashboard");
-      }, 1500);
-    } catch (err) {
+      // Call backend API for real authentication
+      const loginResponse = await authService.login(badge, password);
+      
       setIsLoading(false);
-      setError("Secure link failed. Please retry.");
+      
+      // We parse out minimal user details from the badge/role. 
+      // In a real app, the backend might return user details with the token,
+      // or we'd make a /users/me call. For now, we store what we know.
+      const user = {
+        id: "USR-" + badge,
+        badge_number: badge,
+        role: role,
+        first_name: badge.startsWith("SP") ? "SP Kumar" : "Officer",
+        last_name: "K."
+      };
+      
+      setAuth(user, loginResponse.access_token);
+      router.push("/dashboard");
+    } catch (err: any) {
+      setIsLoading(false);
+      if (err.response && err.response.data && err.response.data.detail) {
+        setError(`Secure link failed: ${err.response.data.detail}`);
+      } else {
+        setError("Secure link failed. Please check your credentials and retry.");
+      }
     }
   };
 

@@ -1,25 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic_settings import BaseSettings
 from app.api.v1.api import api_router
-
-class Settings(BaseSettings):
-    app_name: str = "KCIA API"
-    version: str = "1.0.0"
-    api_v1_str: str = "/api/v1"
-
-    class Config:
-        env_file = ".env"
-
-settings = Settings()
+from app.core.config import settings
 
 app = FastAPI(
-    title=settings.app_name,
-    version=settings.version,
-    openapi_url=f"{settings.api_v1_str}/openapi.json"
+    title=settings.PROJECT_NAME,
+    version="1.0.0",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-app.include_router(api_router, prefix=settings.api_v1_str)
+app.include_router(api_router, prefix=settings.API_V1_STR)
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,6 +23,6 @@ app.add_middleware(
 def root():
     return {"message": "Welcome to the KSP Crime Intelligence Assistant API"}
 
-@app.get(f"{settings.api_v1_str}/health")
+@app.get(f"{settings.API_V1_STR}/health")
 def health_check():
     return {"status": "healthy"}

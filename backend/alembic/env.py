@@ -23,10 +23,14 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from app.models.base import Base
 from app.models.user import User, Role, Permission
-from app.models.entities import Suspect, Victim, Vehicle, Evidence
-from app.models.crime import Crime
-from app.models.investigation import Investigation, Task
-from app.models.location import Location, PoliceStation
+from app.models.entities import Suspect, SuspectCrime, Victim, VictimCrime, Vehicle, CrimeVehicle, Evidence
+from app.models.crime import CrimeType, Crime, CrimeStatusHistory
+from app.models.investigation import Investigation, InvestigationNote
+from app.models.location import District, PoliceStation
+from app.models.analytics import (
+    Report, AIConversation, AIMessage, AIQueryLog,
+    CrimePrediction, HotspotAnalysis, AuditLog, Notification
+)
 
 target_metadata = Base.metadata
 

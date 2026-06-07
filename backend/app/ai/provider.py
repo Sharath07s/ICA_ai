@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
 from langchain_core.language_models.chat_models import BaseChatModel
 
 logger = logging.getLogger(__name__)
@@ -22,9 +22,7 @@ class OpenAIProvider(AIProvider):
     def __init__(self, api_key: str):
         if not api_key:
             raise ValueError("OPENAI_API_KEY is required for OpenAIProvider")
-        from langchain_openai import ChatOpenAI
         self.api_key = api_key
-        # We can dynamically import inside methods or init
 
     def get_chat_model(self, temperature: float = 0.0) -> BaseChatModel:
         from langchain_openai import ChatOpenAI
@@ -72,7 +70,6 @@ class DeepSeekProvider(AIProvider):
         self.api_key = api_key
 
     def get_chat_model(self, temperature: float = 0.0) -> BaseChatModel:
-        # DeepSeek can be integrated via ChatOpenAI client with different base URL
         from langchain_openai import ChatOpenAI
         return ChatOpenAI(
             api_key=self.api_key, 
@@ -80,6 +77,21 @@ class DeepSeekProvider(AIProvider):
             temperature=temperature, 
             model="deepseek-chat"
         )
+
+    def generate_response(self, prompt: str, **kwargs) -> str:
+        model = self.get_chat_model()
+        response = model.invoke(prompt)
+        return response.content
+
+class GroqProvider(AIProvider):
+    def __init__(self, api_key: str):
+        if not api_key:
+            raise ValueError("GROQ_API_KEY is required for GroqProvider")
+        self.api_key = api_key
+
+    def get_chat_model(self, temperature: float = 0.0) -> BaseChatModel:
+        from langchain_groq import ChatGroq
+        return ChatGroq(groq_api_key=self.api_key, temperature=temperature, model="llama-3.3-70b-versatile")
 
     def generate_response(self, prompt: str, **kwargs) -> str:
         model = self.get_chat_model()
@@ -98,5 +110,60 @@ def get_ai_provider(provider_name: str, **kwargs) -> AIProvider:
         return ClaudeProvider(api_key=kwargs.get("anthropic_api_key"))
     elif provider_name == "deepseek":
         return DeepSeekProvider(api_key=kwargs.get("deepseek_api_key"))
+    elif provider_name == "groq":
+        return GroqProvider(api_key=kwargs.get("groq_api_key"))
     else:
         raise ValueError(f"Unsupported AI provider: {provider_name}")
+
+class FallbackManager:
+    """Manages fallback execution across multiple providers."""
+    
+    @staticmethod
+    def execute_with_fallback(
+        prompt: Any, 
+        structured_schema: Optional[Type] = None, 
+        temperature: float = 0.0
+    ) -> Dict[str, Any]:
+        """
+        Executes a prompt (or list of messages) with fallback logic.
+        Returns {"result": Any, "provider": str}
+        """
+        from app.core.config import settings
+        
+        # Priority: Groq -> Gemini -> OpenAI -> DeepSeek
+        fallback_sequence = ["groq", "gemini", "openai", "deepseek"]
+        
+        last_error = None
+        
+        for provider_name in fallback_sequence:
+            try:
+                if provider_name == "groq" and not settings.GROQ_API_KEY: continue
+                if provider_name == "gemini" and not settings.GEMINI_API_KEY: continue
+                if provider_name == "openai" and not settings.OPENAI_API_KEY: continue
+                if provider_name == "deepseek" and not settings.DEEPSEEK_API_KEY: continue
+                
+                provider = get_ai_provider(
+                    provider_name,
+                    groq_api_key=settings.GROQ_API_KEY,
+                    gemini_api_key=settings.GEMINI_API_KEY,
+                    openai_api_key=settings.OPENAI_API_KEY,
+                    deepseek_api_key=settings.DEEPSEEK_API_KEY
+                )
+                
+                model = provider.get_chat_model(temperature=temperature)
+                
+                if structured_schema:
+                    structured_model = model.with_structured_output(structured_schema)
+                    result = structured_model.invoke(prompt)
+                else:
+                    result = model.invoke(prompt)
+                    result = result.content
+                    
+                return {"result": result, "provider": provider_name}
+                
+            except Exception as e:
+                logger.warning(f"Provider {provider_name} failed: {e}")
+                last_error = e
+                continue
+                
+        raise RuntimeError(f"All AI providers failed. Last error: {last_error}")

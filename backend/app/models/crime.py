@@ -27,6 +27,8 @@ class Crime(BaseModel):
     longitude = Column(Numeric)
     
     status = Column(String(100))
+    estimated_loss = Column(Numeric)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     
     crime_type = relationship("CrimeType")
     station = relationship("PoliceStation")

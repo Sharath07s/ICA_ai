@@ -20,55 +20,56 @@ import {
   Clock
 } from "lucide-react";
 
-// Mock graph schema
-const INITIAL_NODES = [
-  // Suspects (Blue)
-  { id: "n-vicky", label: "Vicky Saluja", type: "suspect", risk: "High", rating: 9.4, desc: "Primary suspect in organized auto smuggling." },
-  { id: "n-aslam", label: "Aslam Khan", type: "suspect", risk: "High", rating: 8.8, desc: "Logistics coordinator for interstate transports." },
-  { id: "n-kariya", label: "Kariya Raja", type: "suspect", risk: "High", rating: 9.1, desc: "Repeat burglar with multiple housebreaking convictions." },
-  { id: "n-ramesh", label: "Ramesh Kumar", type: "suspect", risk: "Medium", rating: 6.4, desc: "ATM malware specialist linked to jackpotting rings." },
-  
-  // Crimes (Red)
-  { id: "n-c1", label: "BLR-FIR-2026-0399", type: "crime", risk: "High", rating: 9.0, desc: "Automobile theft from Koramangala." },
-  { id: "n-c2", label: "MYS-FIR-2026-0941", type: "crime", risk: "Medium", rating: 7.2, desc: "Burglary in Vidyaranyapuram." },
-  { id: "n-c3", label: "BLR-FIR-2026-0412", type: "crime", risk: "High", rating: 8.5, desc: "ATM Jackpotting at Indiranagar NCR terminal." },
-  
-  // Phones (Purple)
-  { id: "n-p1", label: "+91-9988-512X", type: "phone", risk: "Medium", rating: 7.0, desc: "Vicky's burner phone active near border checks." },
-  { id: "n-p2", label: "+91-9122-843X", type: "phone", risk: "Low", rating: 4.2, desc: "Phone registered to Kariya Raja's associate." },
-
-  // Vehicles (Orange)
-  { id: "n-v1", label: "KA-01-MJ-4001", type: "vehicle", risk: "High", rating: 8.9, desc: "Smuggled Toyota Fortuner intercepted at border." },
-  { id: "n-v2", label: "KA-09-EX-1290", type: "vehicle", risk: "Medium", rating: 5.8, desc: "Getaway motorcycle spotted in Mysuru burglaries." }
-];
-
-const INITIAL_EDGES = [
-  { source: "n-vicky", target: "n-aslam", relation: "Co-Offenders", weight: 90, desc: "Arrested together in 2024. Active contact." },
-  { source: "n-vicky", target: "n-c1", relation: "Suspected Planner", weight: 85, desc: "GPS cell pings place target within 50m of site." },
-  { source: "n-vicky", target: "n-p1", relation: "Owner/User", weight: 95, desc: "SIM registered under target's known alias." },
-  { source: "n-vicky", target: "n-v1", relation: "Linked Vehicle", weight: 80, desc: "Spotted driving this SUV 2 hours before theft." },
-  
-  { source: "n-aslam", target: "n-v1", relation: "Transporter", weight: 85, desc: "Tollgate ANPR camera matching suspect signature." },
-  { source: "n-aslam", target: "n-c1", relation: "Accomplice", weight: 75, desc: "Co-accused in active FIR records." },
-
-  { source: "n-kariya", target: "n-c2", relation: "Primary Suspect", weight: 90, desc: "M.O. signatures match target exactly. Sighted by patrols." },
-  { source: "n-kariya", target: "n-p2", relation: "User", weight: 90, desc: "Associated with phone active near burglaries." },
-  { source: "n-kariya", target: "n-v2", relation: "Getaway Ride", weight: 80, desc: "Spotted on street CCTV fleeing scene." },
-
-  { source: "n-v2", target: "n-c2", relation: "Getaway Transit", weight: 85, desc: "Registration plate matched with surveillance logs." },
-  
-  { source: "n-ramesh", target: "n-c3", relation: "ATM Programmer", weight: 92, desc: "USB malware footprint matches coding styles." }
-];
+// Dynamic Graph State using Neo4j
+const API_BASE = "http://localhost:8000/api/v1";
 
 function KnowledgeGraphContent() {
   const searchParams = useSearchParams();
-  const [nodes, setNodes] = useState(INITIAL_NODES);
-  const [edges, setEdges] = useState(INITIAL_EDGES);
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNode, setSelectedNode] = useState<any>(null);
   
   // Highlight mode
   const [highlightedNodeIds, setHighlightedNodeIds] = useState<string[]>([]);
+  const [nodeCoordinates, setNodeCoordinates] = useState<Record<string, {x: number, y: number}>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch real graph data from Neo4j API
+  useEffect(() => {
+    const fetchGraphData = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetch(`${API_BASE}/neo4j/high-risk-networks`);
+        const data = await res.json();
+        
+        if (data.nodes && data.edges) {
+          setNodes(data.nodes);
+          setEdges(data.edges);
+          
+          // Generate circular layout
+          const coords: Record<string, {x: number, y: number}> = {};
+          const cx = 250;
+          const cy = 175;
+          const r = 120;
+          data.nodes.forEach((node: any, idx: number) => {
+            const angle = (idx / data.nodes.length) * 2 * Math.PI;
+            coords[node.id] = {
+              x: cx + r * Math.cos(angle),
+              y: cy + r * Math.sin(angle)
+            };
+          });
+          setNodeCoordinates(coords);
+        }
+      } catch (err) {
+        console.error("Failed to fetch knowledge graph", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchGraphData();
+  }, []);
 
   // Focus on URL node param if provided
   useEffect(() => {
@@ -110,20 +111,7 @@ function KnowledgeGraphContent() {
     }
   };
 
-  // Node position map for SVG positioning (Visual constellation)
-  const NODE_COORDINATES: Record<string, { x: number; y: number }> = {
-    "n-vicky": { x: 120, y: 150 },
-    "n-aslam": { x: 260, y: 120 },
-    "n-kariya": { x: 380, y: 220 },
-    "n-ramesh": { x: 140, y: 270 },
-    "n-c1": { x: 200, y: 50 },
-    "n-c2": { x: 440, y: 120 },
-    "n-c3": { x: 50, y: 240 },
-    "n-p1": { x: 50, y: 80 },
-    "n-p2": { x: 320, y: 290 },
-    "n-v1": { x: 250, y: 220 },
-    "n-v2": { x: 450, y: 280 }
-  };
+  // Dynamic layout is handled in state nodeCoordinates
 
   // Node styles
   const getNodeColorClass = (type: string, isHighlighted: boolean, isSelected: boolean) => {
@@ -244,8 +232,8 @@ function KnowledgeGraphContent() {
 
               {/* Draw Edges */}
               {edges.map((edge, idx) => {
-                const start = NODE_COORDINATES[edge.source];
-                const end = NODE_COORDINATES[edge.target];
+                const start = nodeCoordinates[edge.source];
+                const end = nodeCoordinates[edge.target];
                 if (!start || !end) return null;
                 return (
                   <g key={`edge-${idx}`}>
@@ -283,7 +271,7 @@ function KnowledgeGraphContent() {
 
               {/* Draw Nodes */}
               {nodes.map((node) => {
-                const coord = NODE_COORDINATES[node.id];
+                const coord = nodeCoordinates[node.id];
                 if (!coord) return null;
                 
                 const isSelected = selectedNode?.id === node.id;
@@ -372,11 +360,11 @@ function KnowledgeGraphContent() {
               <div className="grid grid-cols-2 gap-2 text-center text-xs">
                 <div className="bg-slate-950/40 p-2.5 rounded-lg border border-slate-850">
                   <span className="text-slate-500 block text-[9px] uppercase font-bold">Total Nodes</span>
-                  <span className="text-sm font-bold text-slate-300">142 nodes</span>
+                  <span className="text-sm font-bold text-slate-300">{nodes.length} nodes</span>
                 </div>
                 <div className="bg-slate-950/40 p-2.5 rounded-lg border border-slate-850">
                   <span className="text-slate-500 block text-[9px] uppercase font-bold">Modus Links</span>
-                  <span className="text-sm font-bold text-slate-300">298 links</span>
+                  <span className="text-sm font-bold text-slate-300">{edges.length} links</span>
                 </div>
               </div>
             </div>

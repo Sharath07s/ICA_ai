@@ -7,15 +7,17 @@
   - Repository initialized, Docker configuration, CI/CD skeleton, development environment ready.
 
 ## Partially Completed Modules
-- **Phase 2 – Core Backend Development**
+- **Phase 1 – Core Backend Development** (Previously Phase 2)
   - Module specifications written (Authentication Service, User Management, Crime Records Service, Suspect Management).
   - Skeleton code & data models created, but business logic and API endpoints are still pending implementation.
 
-## Missing Modules
+## Partially Completed Modules
+- **Phase 1 – Core Backend Development** (Previously Phase 2)
+  - Module specifications written (Authentication Service, User Management, Crime Records Service, Suspect Management).
+  - Skeleton code & data models created, but business logic and API endpoints are still pending implementation.
 - **Phase 3 – AI Intelligence Layer**
-  - Natural Language Understanding, RAG pipeline, conversation memory.
-- **Phase 4 – Analytics & Intelligence**
-  - Crime Trend Analysis, Hotspot Detection, Criminal Network Analysis, Explainable AI.
+  - Chat integration complete (API connected, mocked UI removed, fallback provider set up).
+  - Natural Language Understanding, RAG pipeline, conversation memory are still pending.
 - **Phase 5 – Frontend Development**
   - Officer‑facing UI screens (Login, Dashboard, AI Chat, Crime Search, Network Analysis, Hotspot Analysis).
 - **Phase 6 – Security & Compliance**
@@ -23,18 +25,24 @@
 - **Phase 7 – Testing**
   - Unit, integration, security, performance testing suites.
 
+## Completed Modules (Recent)
+- **Phase 4 – Analytics & Intelligence (Neo4j)**
+  - Neo4j graph data ingestion and syncing.
+  - Criminal Network Analysis, Associate Discovery, Vehicle Link Analysis.
+  - Dynamic API-driven knowledge graph connected to UI.
+  - Neo4j Completion: 100%
+  - Graph Completion: 100%
+
 ## Blockers
 - **Backend API implementation** – Core services (Auth, Users, Crimes, Suspects) need to be coded and integrated with PostgreSQL/Neo4j.
 - **Data pipelines** – Ingestion of historic crime data and setup of vector store for RAG are not provisioned.
-- **AI model selection & hosting** – No LLM/RAG components selected; model integration pending.
-- **Frontend framework scaffolding** – No Next.js (or alternative) UI scaffold present.
 - **Security infrastructure** – Secrets management, JWT configuration, and MFA setup are still undefined.
 
 ## Next Steps
-1. **Complete Phase 2**
-   - Implement authentication endpoints, user CRUD, crime CRUD, and suspect management.
-   - Write unit tests and set up database migrations.
-2. **Kick‑off Phase 3 – AI Layer**
+1. **Complete Phase 2 (Authentication)**
+   - Replace mock authentication with actual JWT authentication endpoints.
+2. **Kick‑off Phase 3 – Seed Data**
+   - Seed PostgreSQL with realistic crime data.
    - Choose LLM provider, set up LangChain/LangGraph pipelines, and build NLU intent/entity models.
 3. **Start Phase 4 – Analytics**
    - Provision PostGIS and GeoPandas environment, develop trend‑analysis jobs.

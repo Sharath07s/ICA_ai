@@ -1,13 +1,15 @@
 from pydantic import BaseModel, UUID4
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 class ChatQuery(BaseModel):
     query: str
     session_id: Optional[UUID4] = None
 
 class ChatResponse(BaseModel):
-    session_id: UUID4
-    response: str
-    confidence_score: float
-    reasoning_summary: Optional[str] = None
-    data_sources: List[str] = []
+    message: str
+    provider: str
+    timestamp: str
+    status: str
+    intent: Optional[str] = None
+    structured_data: Optional[List[Dict[str, Any]]] = None
+    record_count: Optional[int] = None

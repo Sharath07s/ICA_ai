@@ -1,26 +1,63 @@
 from neo4j import GraphDatabase
+from neo4j.exceptions import ServiceUnavailable, AuthError
 from app.core.config import settings
+import logging
+import time
+
+logger = logging.getLogger(__name__)
 
 class Neo4jConnection:
     def __init__(self):
         self.driver = None
+        self.connect()
+
+    def connect(self):
         if settings.NEO4J_URI and settings.NEO4J_USER and settings.NEO4J_PASSWORD:
             try:
                 self.driver = GraphDatabase.driver(
                     settings.NEO4J_URI, 
                     auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
                 )
-            except Exception as e:
-                print(f"Failed to create Neo4j driver: {e}")
+                self.driver.verify_connectivity()
+                logger.info("Connected to Neo4j successfully.")
+            except (ServiceUnavailable, AuthError) as e:
+                logger.error(f"Failed to create Neo4j driver: {e}")
+                self.driver = None
 
     def close(self):
         if self.driver:
             self.driver.close()
 
     def get_session(self):
+        if not self.driver:
+            self.connect()
         if self.driver:
             return self.driver.session()
         return None
+
+    def check_health(self):
+        if not self.driver:
+            return {"status": "unhealthy", "reason": "Driver not initialized"}
+        try:
+            with self.driver.session() as session:
+                result = session.run("CALL db.info()")
+                info = result.single()
+                
+                # Fetch node and relationship counts
+                counts_result = session.run("MATCH (n) RETURN count(n) as nodes")
+                nodes = counts_result.single()["nodes"]
+                
+                rels_result = session.run("MATCH ()-[r]->() RETURN count(r) as relationships")
+                rels = rels_result.single()["relationships"]
+                
+                return {
+                    "status": "healthy",
+                    "nodes": nodes,
+                    "relationships": rels
+                }
+        except Exception as e:
+            logger.error(f"Neo4j health check failed: {e}")
+            return {"status": "unhealthy", "reason": str(e)}
 
 neo4j_conn = Neo4jConnection()
 

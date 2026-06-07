@@ -30,6 +30,9 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   kannadaContent?: string;
+  intent?: string;
+  structuredData?: Record<string, any>[];
+  recordCount?: number;
   intelData?: {
     type: "chart" | "map" | "network";
     title: string;
@@ -57,6 +60,72 @@ const SUGGESTED_PROMPTS = [
   { text: "Compare ATM jackpotting trends across districts", icon: BarChart3 }
 ];
 
+// ── Lightweight Markdown → HTML renderer (no deps) ─────────────
+function renderMarkdown(md: string): string {
+  let html = md
+    // Escape HTML entities
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Tables: detect lines with pipes
+  const lines = html.split('\n');
+  let inTable = false;
+  const processed: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const isTableRow = line.startsWith('|') && line.endsWith('|');
+    const isSeparator = /^\|[\s\-:|]+\|$/.test(line);
+
+    if (isTableRow && !inTable) {
+      inTable = true;
+      processed.push('<table>');
+      // Header row
+      const cells = line.split('|').filter(c => c.trim() !== '');
+      processed.push('<thead><tr>' + cells.map(c => `<th>${c.trim()}</th>`).join('') + '</tr></thead>');
+      // Skip separator row
+      if (i + 1 < lines.length && /^\|[\s\-:|]+\|$/.test(lines[i + 1].trim())) {
+        i++;
+      }
+      processed.push('<tbody>');
+    } else if (isTableRow && inTable && !isSeparator) {
+      const cells = line.split('|').filter(c => c.trim() !== '');
+      processed.push('<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>');
+    } else if (isSeparator) {
+      // skip
+    } else {
+      if (inTable) {
+        processed.push('</tbody></table>');
+        inTable = false;
+      }
+      processed.push(line);
+    }
+  }
+  if (inTable) processed.push('</tbody></table>');
+
+  html = processed.join('\n');
+
+  // Bold: **text**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Italic: *text*
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Inline code: `text`
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Unordered list items: - text
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/gs, (m) => `<ul>${m}</ul>`);
+  // Paragraphs (blank-line separated blocks)
+  html = html.replace(/\n{2,}/g, '</p><p>');
+  html = `<p>${html}</p>`;
+  // Clean up empty paragraphs
+  html = html.replace(/<p>\s*<\/p>/g, '');
+  // Line breaks within paragraphs
+  html = html.replace(/\n/g, '<br/>');
+
+  return html;
+}
+
 function AIAssistantPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -83,7 +152,7 @@ function AIAssistantPageContent() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  const executeSearch = (queryText: string) => {
+  const executeSearch = async (queryText: string) => {
     if (!queryText.trim()) return;
     
     // Add user message
@@ -98,107 +167,45 @@ function AIAssistantPageContent() {
     setMessages(prev => [...prev, newUserMessage]);
     setInput("");
     setIsTyping(true);
+    setErrorState(null);
 
-    // Simulate AI thinking and response generation
-    setTimeout(() => {
-      let response: Message = {
+    try {
+      // Import chatService dynamically to avoid SSR issues if any, or just use it if imported
+      const { chatService } = await import('@/services/chat.service');
+      const response = await chatService.sendMessage(queryText);
+      
+      const aiResponse: Message = {
         id: "ai-" + Date.now(),
         role: "assistant",
-        content: `I have analyzed CCTNS records matching your inquiry: "${queryText}". The intelligence layer suggests a strong spatiotemporal correlation across the referenced locations.`,
-        kannadaContent: `ನಿಮ್ಮ ವಿಚಾರಣೆಗೆ ಹೊಂದಿಕೆಯಾಗುವ ಸಿ.ಸಿ.ಟಿ.ಎನ್.ಎಸ್ ದಾಖಲೆಗಳನ್ನು ನಾನು ವಿಶ್ಲೇಷಿಸಿದ್ದೇನೆ: "${translateToKannada(queryText)}". ಸ್ಥಳೀಯ ವಲಯಗಳಲ್ಲಿ ಹೆಚ್ಚಿನ ಭೌಗೋಳಿಕ ಸಂಬಂಧ ಇರುವುದನ್ನು ಗುಪ್ತದಳ ವಿಭಾಗವು ಸೂಚಿಸುತ್ತದೆ.`
+        content: response.message,
+        intent: response.intent,
+        structuredData: response.structured_data ?? undefined,
+        recordCount: response.record_count ?? 0,
+        xaiDetails: {
+           confidence: response.provider === "system_fallback" ? 95 : 100,
+           sources: [`Provider: ${response.provider}`, `Intent: ${response.intent || 'general'}`],
+           reasoning: [
+             `Response received at: ${response.timestamp}`,
+             `Records returned: ${response.record_count ?? 0}`,
+           ]
+        }
       };
-
-      // Custom high-fidelity response configurations based on prompts
-      const lowercaseQuery = queryText.toLowerCase();
-      if (lowercaseQuery.includes("burglary") || lowercaseQuery.includes("mysuru")) {
-        response = {
-          ...response,
-          content: "Spatiotemporal analysis of Mysuru district reveals a 24% spike in 'House Breaking by Night' (HBBN) over the past 45 days. The primary concentration centers around Vidyaranyapuram and Kuvempunagar police jurisdictions.",
-          kannadaContent: "ಕಳೆದ ೪೫ ದಿನಗಳಲ್ಲಿ ಮೈಸೂರು ಜಿಲ್ಲೆಯಲ್ಲಿ ರಾತ್ರಿ ಸಮಯದ ಕನ್ನಗಳ್ಳತನ ಪ್ರಕರಣಗಳು ಶೇಕಡಾ ೨೪ ರಷ್ಟು ಹೆಚ್ಚಾಗಿವೆ. ಮುಖ್ಯವಾಗಿ ವಿದ್ಯಾರಣ್ಯಪುರಂ ಮತ್ತು ಕುವೆಂಪುನಗರ ಪೊಲೀಸ್ ಠಾಣಾ ವ್ಯಾಪ್ತಿಗಳಲ್ಲಿ ಹೆಚ್ಚಿನ ಪ್ರಕರಣಗಳು ವರದಿಯಾಗಿವೆ.",
-          intelData: {
-            type: "map",
-            title: "Hotspot Locations (Mysuru Sector)",
-            mapDetails: [
-              { area: "Vidyaranyapuram Sector", risk: "High", count: 8 },
-              { area: "Kuvempunagar Sector", risk: "High", count: 6 },
-              { area: "Gokulam Sector", risk: "Medium", count: 3 }
-            ]
-          },
-          xaiDetails: {
-            confidence: 88,
-            sources: [
-              "CCTNS HBBN Offence Database (2025-2026)",
-              "Karnataka SCRB monthly crime briefing files",
-              "Mobile Tower location records for repeat offenders"
-            ],
-            reasoning: [
-              "1. Detected cluster coordinates (12.29° N, 76.63° E) with high density overlap.",
-              "2. Temporal pattern match: 85% of break-ins executed between 01:00 AM and 03:30 AM.",
-              "3. Entry Modus Operandi matches lock-tampering signatures associated with Kariya Raja ring."
-            ]
-          }
-        };
-      } else if (lowercaseQuery.includes("vicky") || lowercaseQuery.includes("offender") || lowercaseQuery.includes("link")) {
-        response = {
-          ...response,
-          content: "Suspect connection graph query resolved. Vicky Saluja (wanted in automobile smuggling) shows strong co-offending links with Aslam Khan and cross-state logistics brokers. A direct communication link via cellular metadata is established.",
-          kannadaContent: "ಶಂಕಿತ ವ್ಯಕ್ತಿಗಳ ಸಂಬಂಧಗಳ ನಕ್ಷೆ ಸಿದ್ಧವಾಗಿದೆ. ವಾಹನ ಕಳ್ಳಸಾಗಣೆಯಲ್ಲಿ ಬೇಕಾಗಿರುವ ವಿಕ್ಕಿ ಸಲೂಜಾ, ಅಸ್ಲಾಂ ಖಾನ್ ಮತ್ತು ಹೊರ ರಾಜ್ಯಗಳ ಸಾಗಣೆ ದಲ್ಲಾಳಿಗಳೊಂದಿಗೆ ನಿಕಟ ಸಂಪರ್ಕ ಹೊಂದಿರುವುದು ದೃಢಪಟ್ಟಿದೆ.",
-          intelData: {
-            type: "network",
-            title: "Associated Network (Vicky Saluja Core)",
-            networkLinks: [
-              { from: "Vicky Saluja (Target)", relation: "Co-Offender / Leader", to: "Aslam Khan" },
-              { from: "Aslam Khan", relation: "Logistics Broker", to: "Tamil Nadu Border Route" },
-              { from: "Vicky Saluja (Target)", relation: "Frequent Cell Link", to: "Phone Node (+91-9988-X)" }
-            ]
-          },
-          xaiDetails: {
-            confidence: 94,
-            sources: [
-              "Neo4j Co-arrest registry network database",
-              "CDR call detail logs (Tower location logs)",
-              "CCTNS suspect profiling dossier files"
-            ],
-            reasoning: [
-              "1. Neo4j graph traversal identified 2 degrees of separation between target and border fences.",
-              "2. CDR records confirm call exchange within 30 minutes of vehicle theft incidents.",
-              "3. Identified overlapping vehicle sightings on toll camera checkpoints (ANPR logs)."
-            ]
-          }
-        };
-      } else {
-        response = {
-          ...response,
-          content: `Statewide crime query processed. Analyzing Karnataka State records matching the query: "${queryText}". The analytics model reports normal volume trends in other sectors with a 4% decline in traditional property crimes.`,
-          kannadaContent: `ರಾಜ್ಯಮಟ್ಟದ ಅಪರಾಧ ವಿಚಾರಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ. ನಿಮ್ಮ ಪ್ರಶ್ನೆಗೆ ಸಂಬಂಧಿಸಿದ ಕರ್ನಾಟಕದ ದಾಖಲೆಗಳನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗಿದೆ: "${translateToKannada(queryText)}". ಇತರ ವಲಯಗಳಲ್ಲಿ ಅಪರಾಧ ಪ್ರಮಾಣ ಶೇಕಡಾ ೪ ರಷ್ಟು ಕಡಿಮೆಯಾಗಿದೆ.`,
-          intelData: {
-            type: "chart",
-            title: "Crime Classification Comparison (Quarterly)",
-            chartValues: [
-              { label: "Cyber Fraud", value: 45 },
-              { label: "House Breaking", value: 25 },
-              { label: "Auto Theft", value: 20 },
-              { label: "Other Larceny", value: 10 }
-            ]
-          },
-          xaiDetails: {
-            confidence: 76,
-            sources: [
-              "CCTNS unified state records",
-              "SCRB digital fraud statistics database"
-            ],
-            reasoning: [
-              "1. Compared seasonal average volumes across all 1100+ stations.",
-              "2. High density clusters primarily verified in Urban Bengaluru zones."
-            ]
-          }
-        };
-      }
-
-      setMessages(prev => [...prev, response]);
-      setExpandedXaiId(response.id); // Auto expand XAI panel for visual excellence
+      
+      setMessages(prev => [...prev, aiResponse]);
+      setExpandedXaiId(aiResponse.id);
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      setErrorState(error.message || "Failed to communicate with the assistant.");
+      
+      const errorResponse: Message = {
+        id: "err-" + Date.now(),
+        role: "assistant",
+        content: `Error: ${error.message || "Failed to connect to the backend AI service."}`
+      };
+      setMessages(prev => [...prev, errorResponse]);
+    } finally {
       setIsTyping(false);
-    }, 1800);
+    }
   };
 
   const handleSendSubmit = (e: React.FormEvent) => {
@@ -384,7 +391,7 @@ function AIAssistantPageContent() {
                             ? "bg-gradient-to-r from-blue-600/25 to-indigo-600/15 border-blue-500/30 text-slate-100 rounded-tr-none" 
                             : "bg-slate-950/60 border-slate-850 text-slate-200 rounded-tl-none"
                         }`}>
-                          {language === "EN" ? msg.content : (msg.kannadaContent || msg.content)}
+                          <div className="prose prose-sm prose-invert max-w-none [&_table]:w-full [&_table]:text-[10px] [&_th]:bg-slate-900 [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-bold [&_th]:text-slate-300 [&_th]:border [&_th]:border-slate-800 [&_td]:px-2 [&_td]:py-1.5 [&_td]:border [&_td]:border-slate-800/60 [&_td]:text-slate-300 [&_code]:text-blue-400 [&_code]:bg-slate-900/80 [&_code]:px-1 [&_code]:rounded [&_strong]:text-white [&_ul]:space-y-1 [&_li]:text-slate-300 [&_p]:text-slate-300 [&_em]:text-slate-400" dangerouslySetInnerHTML={{ __html: renderMarkdown(language === "EN" ? msg.content : (msg.kannadaContent || msg.content)) }} />
                         </div>
 
                         {/* Rich Intel Data Component (If exists) */}
