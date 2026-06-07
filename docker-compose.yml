@@ -1,0 +1,98 @@
+version: "3.9"
+
+services:
+  # ── Backend API ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - kcia-network
+
+  # ── Frontend ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - kcia-network
+
+  # ── PostgreSQL + pgvector ────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kcia_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kcia_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-kcia_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kcia_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kcia-network
+
+  # ── Redis ────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kcia-network
+
+  # ── Neo4j ────────────────────────────────────────────────
+  neo4j:
+    image: neo4j:5-community
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-neo4j_password}
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - kcia-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  neo4j_data:
+
+networks:
+  kcia-network:
+    driver: bridge
