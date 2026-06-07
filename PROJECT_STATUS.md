@@ -1,5 +1,7 @@
 # Project Status
 
+> **NOTE:** Please refer to [`docs/PROJECT_HANDOVER.md`](docs/PROJECT_HANDOVER.md) as the central source of truth for all current repository state, completed phases, and architecture.
+
 ## Completed Modules
 - **Phase 0 – Discovery & Planning**
   - Objectives defined, architecture sketched, scope finalized.
