@@ -6,3 +6,6 @@ from .entities import Suspect, SuspectCrime, Victim, VictimCrime, Vehicle, Crime
 from .investigation import Investigation, InvestigationNote
 from .analytics import Report, AIConversation, AIMessage, AIQueryLog, CrimePrediction, HotspotAnalysis, AuditLog, Notification
 from .document import DocumentChunk
+from .alert import Alert
+from .officer import OfficerAssignment, OfficerAction
+from .event_audit_log import EventAuditLog

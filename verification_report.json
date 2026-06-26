@@ -1,0 +1,20 @@
+{
+  "Routes PASS": [
+    "/",
+    "/login",
+    "/dashboard",
+    "/command-wall",
+    "/predictive-intelligence",
+    "/intelligence-fusion",
+    "/investigations",
+    "/alerts",
+    "/suspects",
+    "/officers"
+  ],
+  "Routes FAIL": [],
+  "Console Errors": [],
+  "Network Failures": [],
+  "Runtime Exceptions": [],
+  "Hydration Failures": [],
+  "WebSocket Failures": []
+}

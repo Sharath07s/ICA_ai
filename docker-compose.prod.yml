@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend.Dockerfile
+    restart: always
+    environment:
+      - ENVIRONMENT=production
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend.Dockerfile
+    restart: always
+    command: npm run start -- -H 0.0.0.0
+
+  postgres:
+    restart: always
+
+  redis:
+    restart: always
+
+  neo4j:
+    restart: always

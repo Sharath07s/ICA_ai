@@ -24,6 +24,9 @@ import {
   Info,
   Layers
 } from "lucide-react";
+import ConfidenceMeter from "@/components/AIWorkspace/ConfidenceMeter";
+import SourceAttribution from "@/components/AIWorkspace/SourceAttribution";
+import ReasoningTracePanel from "@/components/AIWorkspace/ReasoningTracePanel";
 
 interface Message {
   id: string;
@@ -82,16 +85,16 @@ function renderMarkdown(md: string): string {
       inTable = true;
       processed.push('<table>');
       // Header row
-      const cells = line.split('|').filter(c => c.trim() !== '');
-      processed.push('<thead><tr>' + cells.map(c => `<th>${c.trim()}</th>`).join('') + '</tr></thead>');
+      const cells = line.split('|')?.filter(c => c.trim() !== '');
+      processed.push('<thead><tr>' + cells?.map(c => `<th>${c.trim()}</th>`).join('') + '</tr></thead>');
       // Skip separator row
       if (i + 1 < lines.length && /^\|[\s\-:|]+\|$/.test(lines[i + 1].trim())) {
         i++;
       }
       processed.push('<tbody>');
     } else if (isTableRow && inTable && !isSeparator) {
-      const cells = line.split('|').filter(c => c.trim() !== '');
-      processed.push('<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>');
+      const cells = line.split('|')?.filter(c => c.trim() !== '');
+      processed.push('<tr>' + cells?.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>');
     } else if (isSeparator) {
       // skip
     } else {
@@ -114,7 +117,7 @@ function renderMarkdown(md: string): string {
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
   // Unordered list items: - text
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>\n?)+/gs, (m) => `<ul>${m}</ul>`);
+  html = html.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`);
   // Paragraphs (blank-line separated blocks)
   html = html.replace(/\n{2,}/g, '</p><p>');
   html = `<p>${html}</p>`;
@@ -194,7 +197,7 @@ function AIAssistantPageContent() {
       setMessages(prev => [...prev, aiResponse]);
       setExpandedXaiId(aiResponse.id);
     } catch (error: any) {
-      console.error("Chat error:", error);
+      console.warn("Chat error:", error);
       setErrorState(error.message || "Failed to communicate with the assistant.");
       
       const errorResponse: Message = {
@@ -267,7 +270,7 @@ function AIAssistantPageContent() {
           {/* Quick Prompts List */}
           <div className="mt-4 space-y-2">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Templates</span>
-            {SUGGESTED_PROMPTS.map((prompt, idx) => {
+            {SUGGESTED_PROMPTS?.map((prompt, idx) => {
               const Icon = prompt.icon;
               return (
                 <button
@@ -285,7 +288,7 @@ function AIAssistantPageContent() {
           {/* History log */}
           <div className="flex-1 overflow-y-auto mt-6 space-y-2 pr-1">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">History Logs</span>
-            {HISTORIC_CONVERSATIONS.map((hist) => (
+            {HISTORIC_CONVERSATIONS?.map((hist) => (
               <div
                 key={hist.id}
                 onClick={() => executeSearch(hist.title)}
@@ -360,7 +363,7 @@ function AIAssistantPageContent() {
                   </p>
                 </div>
                 <div className="w-full grid grid-cols-1 gap-2 pt-2">
-                  {SUGGESTED_PROMPTS.map((p, idx) => (
+                  {SUGGESTED_PROMPTS?.map((p, idx) => (
                     <button
                       key={idx}
                       onClick={() => executeSearch(p.text)}
@@ -373,7 +376,7 @@ function AIAssistantPageContent() {
               </div>
             ) : (
               <div className="space-y-6">
-                {messages.map((msg) => {
+                {messages?.map((msg) => {
                   const isUser = msg.role === "user";
                   return (
                     <div key={msg.id} className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -404,7 +407,7 @@ function AIAssistantPageContent() {
                             {/* SVG Chart representation */}
                             {msg.intelData.type === "chart" && msg.intelData.chartValues && (
                               <div className="space-y-2.5">
-                                {msg.intelData.chartValues.map((cv, idx) => (
+                                {msg.intelData.chartValues?.map((cv, idx) => (
                                   <div key={idx} className="space-y-1">
                                     <div className="flex justify-between text-[10px] font-semibold text-slate-300">
                                       <span>{cv.label}</span>
@@ -424,7 +427,7 @@ function AIAssistantPageContent() {
                             {/* Spatiotemporal Map component */}
                             {msg.intelData.type === "map" && msg.intelData.mapDetails && (
                               <div className="space-y-2">
-                                {msg.intelData.mapDetails.map((md, idx) => (
+                                {msg.intelData.mapDetails?.map((md, idx) => (
                                   <div key={idx} className="flex justify-between items-center p-2 bg-slate-900/60 rounded-lg border border-slate-850">
                                     <div className="flex items-center gap-2">
                                       <MapPin className="h-3.5 w-3.5 text-red-400" />
@@ -446,7 +449,7 @@ function AIAssistantPageContent() {
                             {/* Graph snippet component */}
                             {msg.intelData.type === "network" && msg.intelData.networkLinks && (
                               <div className="space-y-2">
-                                {msg.intelData.networkLinks.map((nl, idx) => (
+                                {msg.intelData.networkLinks?.map((nl, idx) => (
                                   <div key={idx} className="flex items-center gap-2 text-[10px] bg-slate-900/60 p-2 rounded-lg border border-slate-850 text-slate-300">
                                     <span className="font-semibold text-blue-400">{nl.from}</span>
                                     <span className="text-[9px] text-slate-500 font-mono uppercase bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
@@ -477,42 +480,10 @@ function AIAssistantPageContent() {
                             </button>
                             
                             {expandedXaiId === msg.id && (
-                              <div className="p-4 bg-slate-950/30 border-t border-slate-850 space-y-3.5">
-                                {/* Confidence Score Gauge */}
-                                <div className="space-y-1">
-                                  <div className="flex justify-between text-[9px] font-bold text-slate-400">
-                                    <span>AI CONFIDENCE COEFFICIENT</span>
-                                    <span className="text-emerald-400">{msg.xaiDetails.confidence}%</span>
-                                  </div>
-                                  <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                                    <div 
-                                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" 
-                                      style={{ width: `${msg.xaiDetails.confidence}%` }}
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Sources */}
-                                <div className="space-y-1">
-                                  <span className="text-[9px] font-bold text-slate-400 block uppercase">Evidence Repositories Searched</span>
-                                  <ul className="text-[10px] text-slate-350 list-disc pl-4 space-y-0.5">
-                                    {msg.xaiDetails.sources.map((s, idx) => (
-                                      <li key={idx}>{s}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-
-                                {/* Reasoning Chain */}
-                                <div className="space-y-1">
-                                  <span className="text-[9px] font-bold text-slate-400 block uppercase">Algorithmic Reasoning Chain</span>
-                                  <div className="space-y-1.5">
-                                    {msg.xaiDetails.reasoning.map((r, idx) => (
-                                      <p key={idx} className="text-[10px] text-slate-300 leading-normal font-mono bg-slate-950/60 p-2 rounded border border-slate-850">
-                                        {r}
-                                      </p>
-                                    ))}
-                                  </div>
-                                </div>
+                              <div className="p-4 bg-slate-950/30 border-t border-slate-850 space-y-4">
+                                <ConfidenceMeter confidence={msg.xaiDetails.confidence} />
+                                <SourceAttribution sources={msg.xaiDetails.sources} />
+                                <ReasoningTracePanel reasoning={msg.xaiDetails.reasoning} />
                               </div>
                             )}
                           </div>

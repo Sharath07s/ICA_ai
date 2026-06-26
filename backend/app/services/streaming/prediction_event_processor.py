@@ -1,0 +1,2 @@
+class PredictionEventProcessor:
+    pass

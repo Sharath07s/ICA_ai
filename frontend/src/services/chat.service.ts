@@ -32,8 +32,8 @@ export const chatService = {
         try {
           const authData = JSON.parse(storageStr);
           token = authData?.state?.token || '';
-        } catch (e) {
-          console.error("Failed to parse auth storage");
+        } catch (_) {
+          console.warn("Failed to parse auth storage");
         }
       }
 
@@ -58,7 +58,7 @@ export const chatService = {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
         if (axiosError.response) {
-          console.error('Chat API Error Data:', axiosError.response.data);
+          console.warn('Chat API Error Data:', axiosError.response.data);
           
           if (axiosError.response.status === 401 || axiosError.response.status === 403) {
              throw new Error("Authentication failed. Please log in again.");
@@ -70,7 +70,7 @@ export const chatService = {
              throw new Error("Backend server encountered an error processing the AI response.");
           }
         } else if (axiosError.request) {
-          console.error('Chat API Network/Timeout Error:', axiosError.request);
+          console.warn('Chat API Network/Timeout Error:', axiosError.request);
           throw new Error("Network error or timeout. The AI service took too long to respond.");
         }
       }

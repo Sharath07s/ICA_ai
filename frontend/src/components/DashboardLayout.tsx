@@ -6,20 +6,33 @@ import { useAuthStore } from "../store/authStore";
 import Link from "next/link";
 import { 
   LayoutDashboard, 
-  MessageSquare, 
   Map, 
   Network, 
   FolderOpen, 
-  FileText, 
-  LogOut, 
-  Shield, 
-  Bell, 
+  MessageSquare,
+  FileText,
+  Menu,
+  Bell,
+  Search,
+  LogOut,
+  ShieldCheck,
+  X,
   User,
   Globe,
   Lock,
-  Menu,
-  X
+  ShieldAlert,
+  Home, 
+  Users, 
+  Settings, 
+  FileSearch, 
+  HelpCircle, 
+  Shield,
+  Monitor,
+  Activity,
+  Radar
 } from "lucide-react";
+import GlobalSearchBar from "./GlobalSearchBar";
+import IntelligenceFeedTicker from "./IntelligenceFeedTicker";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -52,10 +65,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: 'Investigation', href: '/investigation', icon: FileSearch },
+    { name: 'Officer Workspace', href: '/officer-workspace', icon: Shield },
+    { name: 'Alert Center', href: '/alert-center', icon: ShieldAlert },
+    { name: 'Command Wall', href: '/command-wall', icon: Monitor },
+    { name: 'Predictive Intelligence', href: '/predictive-intelligence', icon: Radar },
+    { name: 'System Health', href: '/system-health', icon: Activity },
     { name: "AI Assistant", href: "/ai-assistant", icon: MessageSquare },
     { name: "Crime Map", href: "/crime-map", icon: Map },
     { name: "Network Analysis", href: "/knowledge-graph", icon: Network },
+    { name: "Timeline Intelligence", href: "/timeline-intelligence", icon: FolderOpen },
     { name: "Investigation Board", href: "/investigation-board", icon: FolderOpen },
+    { name: "FIR Workspace", href: "/fir-workspace", icon: FileText },
+    { name: "Executive Intelligence", href: "/executive-dashboard", icon: ShieldCheck },
     { name: "Intelligence Reports", href: "/reports", icon: FileText },
   ];
 
@@ -95,7 +117,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Navigation Items */}
         <nav className="flex-1 space-y-1.5 px-3 py-4 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItems?.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
@@ -158,10 +180,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         isSidebarOpen ? "md:pl-64" : "md:pl-20"
       }`}>
         
+        <IntelligenceFeedTicker />
+
         {/* Top Navbar */}
         <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between px-6 border-b border-slate-800/60 bg-[#061224]/85 backdrop-blur-md">
           {/* Left info */}
-          <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             <div className="flex items-center gap-1.5 rounded-full bg-slate-900 border border-slate-800 px-3 py-1 text-[10px] font-semibold text-slate-400">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -175,6 +199,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <span>ROLE: {user?.role || "OFFICER"}</span>
             </div>
           </div>
+
+          <GlobalSearchBar />
 
           {/* Right actions */}
           <div className="flex items-center gap-4">

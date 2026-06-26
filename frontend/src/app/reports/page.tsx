@@ -213,7 +213,7 @@ export default function ReportsPage() {
                   
                   {/* Progress indicator bars */}
                   <div className="grid grid-cols-5 gap-1.5 pt-2">
-                    {[1, 2, 3, 4, 5].map((s) => (
+                    {[1, 2, 3, 4, 5]?.map((s) => (
                       <div 
                         key={s} 
                         className={`h-2.5 rounded transition-all ${
@@ -280,7 +280,7 @@ export default function ReportsPage() {
 
           {/* List display */}
           <div className="space-y-3">
-            {reports.map((report) => (
+            {reports?.map((report) => (
               <div 
                 key={report.id} 
                 className="p-4 bg-slate-950/40 hover:bg-slate-950/70 border border-slate-850 hover:border-slate-750/80 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all"

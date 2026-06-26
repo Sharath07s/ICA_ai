@@ -95,3 +95,4 @@ pgvector
 sentence-transformers
 langchain-huggingface
 pypdf
+psutil==6.0.0

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, users, crimes, chat, investigations, ws, suspects, intents, neo4j
+from app.api.v1 import auth, users, crimes, chat, investigations, ws, suspects, intents, neo4j, timeline, executive, alerts, officer, command_wall, system_health, predictive, predictive_validation, predictive_explainability, model_monitoring, realtime, infrastructure, intelligence_fusion
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -11,3 +11,16 @@ api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 api_router.include_router(intents.router, prefix="/intents", tags=["intents"])
 api_router.include_router(ws.router, prefix="/ws", tags=["websocket"])
 api_router.include_router(neo4j.router, prefix="/neo4j", tags=["neo4j"])
+api_router.include_router(timeline.router, prefix="/timeline", tags=["timeline"])
+api_router.include_router(executive.router, prefix="/executive", tags=["executive"])
+api_router.include_router(alerts.router, prefix="/alerts", tags=["alerts"])
+api_router.include_router(officer.router, prefix="/officer", tags=["officer"])
+api_router.include_router(command_wall.router, prefix="/command-wall", tags=["command_wall"])
+api_router.include_router(system_health.router, prefix="/system-health", tags=["system_health"])
+api_router.include_router(predictive.router, prefix="/predictive", tags=["predictive"])
+api_router.include_router(predictive_validation.router, prefix="/predictive-validation", tags=["predictive_validation"])
+api_router.include_router(predictive_explainability.router, prefix="/predictive/explain", tags=["predictive_explainability"])
+api_router.include_router(model_monitoring.router, prefix="/model-monitoring", tags=["model_monitoring"])
+api_router.include_router(realtime.router, prefix="/realtime", tags=["realtime"])
+api_router.include_router(infrastructure.router, prefix="/infrastructure", tags=["infrastructure"])
+api_router.include_router(intelligence_fusion.router, prefix="/fusion", tags=["intelligence_fusion"])

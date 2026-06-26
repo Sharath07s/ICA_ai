@@ -147,7 +147,7 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Access Clearance Level</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {roles.map((r) => (
+                  {roles?.map((r) => (
                     <button
                       key={r}
                       type="button"

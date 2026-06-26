@@ -22,79 +22,7 @@ import {
   AlertCircle
 } from "lucide-react";
 
-// Mock crimes fallback for high-fidelity presentation
-const MOCK_CRIMES = [
-  {
-    id: "c1",
-    fir_number: "BLR-FIR-2026-0412",
-    title: "ATM Jackpotting & Cash Trapping",
-    type: "Cyber-Physical Theft",
-    district: "Bengaluru City",
-    station: "Indiranagar PS",
-    date: "2026-06-06",
-    status: "Under Investigation",
-    severity: "High",
-    risk_level: "High",
-    modus_operandi: "Insertion of malware-loaded USB device into NCR ATMs during low-traffic night hours.",
-    suspects: ["Ramesh Kumar (Active)", "Unknown Associate (Alias: Cyber-G)" ]
-  },
-  {
-    id: "c2",
-    fir_number: "MYS-FIR-2026-0941",
-    title: "Burglary of Locked Residential Property",
-    type: "House Breaking By Night",
-    district: "Mysuru",
-    station: "Vidyaranyapuram PS",
-    date: "2026-06-05",
-    status: "FIR Registered",
-    severity: "Medium",
-    risk_level: "Medium",
-    modus_operandi: "Crowbar entry through rear window. Target: Gold ornaments and digital assets.",
-    suspects: ["Kariya Raja (Sighted in locality)"]
-  },
-  {
-    id: "c3",
-    fir_number: "MNG-FIR-2026-0210",
-    title: "Phishing & Ransomware Extortion",
-    type: "Cyber Crime",
-    district: "Mangaluru",
-    station: "Cyber Crime PS",
-    date: "2026-06-04",
-    status: "Under Investigation",
-    severity: "High",
-    risk_level: "High",
-    modus_operandi: "Spear-phishing emails targeting local cooperative bank employees, deploying LockBit variant.",
-    suspects: ["Siberian Syndicate (Group IP matched)", "Local Mule Account Holder"]
-  },
-  {
-    id: "c4",
-    fir_number: "HBL-FIR-2026-1189",
-    title: "Commercial Theft at Jewelry Store",
-    type: "Larceny",
-    district: "Hubballi-Dharwad",
-    station: "Gokul Road PS",
-    date: "2026-06-03",
-    status: "Acquitted/Closed",
-    severity: "Low",
-    risk_level: "Low",
-    modus_operandi: "Shoplifting by distraction during festival peak hours.",
-    suspects: ["Gowri S. (Apprehended)"]
-  },
-  {
-    id: "c5",
-    fir_number: "BLR-FIR-2026-0399",
-    title: "Organized Automobile Smuggling Ring",
-    type: "Vehicle Theft",
-    district: "Bengaluru City",
-    station: "Koramangala PS",
-    date: "2026-06-02",
-    status: "Under Investigation",
-    severity: "High",
-    risk_level: "High",
-    modus_operandi: "GPS jammer deployment, electronic key fob bypass, immediate transport to border states.",
-    suspects: ["Vicky Saluja (Wanted)", "Aslam Khan"]
-  }
-];
+// Removed MOCK_CRIMES array. Data is loaded dynamically via useCrimes hook.
 
 const CRITICAL_ALERTS = [
   {
@@ -126,8 +54,8 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCrime, setSelectedCrime] = useState<any>(null);
 
-  // Use live data if available, otherwise fall back to rich mock data
-  const crimesList = crimes && crimes.length > 0 ? crimes : MOCK_CRIMES;
+  // Use live data 
+  const crimesList = crimes || [];
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,7 +116,7 @@ export default function DashboardPage() {
               "Cybercrime growth trends in Bengaluru East",
               "Organized auto theft networks",
               "Suspect ties of Vicky Saluja"
-            ].map((prompt, idx) => (
+            ]?.map((prompt, idx) => (
               <button
                 key={idx}
                 onClick={() => selectSuggestedPrompt(prompt)}
@@ -300,7 +228,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto mt-4 space-y-3 pr-1">
-              {CRITICAL_ALERTS.map((alert) => (
+              {CRITICAL_ALERTS?.map((alert) => (
                 <div 
                   key={alert.id} 
                   className={`p-3.5 rounded-xl border transition-all hover:bg-slate-900/90 ${
@@ -412,7 +340,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50 text-xs">
-                {crimesList.map((crime: any) => (
+                {crimesList?.map((crime: any) => (
                   <tr key={crime.id} className="hover:bg-slate-800/20 transition-colors group">
                     <td className="py-3.5 px-4 font-mono font-bold text-blue-400 group-hover:text-blue-300">
                       {crime.fir_number}
@@ -537,7 +465,7 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Associated Suspect Profiles</h4>
                 <div className="space-y-2">
-                  {selectedCrime.suspects.map((suspect: string, idx: number) => (
+                  {selectedCrime.suspects?.map((suspect: string, idx: number) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-slate-950/50 rounded-xl border border-slate-850">
                       <span className="text-xs font-semibold text-slate-200">{suspect}</span>
                       <button 

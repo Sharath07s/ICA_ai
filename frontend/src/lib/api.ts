@@ -36,7 +36,7 @@ export class APIClient {
       
       return await response.json();
     } catch (error) {
-      console.error('APIClient Error:', error);
+      console.warn('APIClient Error:', error);
       throw error;
     }
   }

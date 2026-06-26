@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+  async redirects() {
+    return [
+      { source: '/investigations', destination: '/investigation-board', permanent: true },
+      { source: '/alerts', destination: '/alert-center', permanent: true },
+      { source: '/suspects', destination: '/knowledge-graph', permanent: true },
+      { source: '/officers', destination: '/officer-workspace', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;
