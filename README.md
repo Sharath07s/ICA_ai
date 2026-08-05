@@ -426,19 +426,6 @@ This project is intended for educational, research, and hackathon demonstration 
 
 ---
 
-# 🙏 Acknowledgements
-
-Special thanks to:
-
-- Karnataka State Police
-- Open Source AI Community
-- Neo4j
-- PostgreSQL
-- FastAPI
-- Next.js
-- Open Source Contributors
-
----
 
 # ⭐ If you found this project useful
 
