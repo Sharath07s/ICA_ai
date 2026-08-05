@@ -416,7 +416,7 @@ Investigator
 
 | Name | Role |
 |------|------|
-| Your Name | Full Stack Developer & AI Engineer |
+| Sharath HN | Full Stack Developer & AI Engineer |
 
 ---
 
